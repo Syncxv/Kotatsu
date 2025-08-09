@@ -1,15 +1,18 @@
 package org.koitharu.kotatsu.main.ui
 
 import android.os.Bundle
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.IdRes
 import androidx.core.view.isEmpty
 import androidx.core.view.isVisible
 import androidx.core.view.iterator
 import androidx.core.view.size
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
@@ -25,10 +28,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.bookmarks.ui.AllBookmarksFragment
+import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.prefs.NavItem
 import org.koitharu.kotatsu.core.ui.util.RecyclerViewOwner
 import org.koitharu.kotatsu.core.ui.widgets.SlidingBottomNavigationView
+import org.koitharu.kotatsu.core.util.ext.buildBundle
 import org.koitharu.kotatsu.core.util.ext.setContentDescriptionAndTooltip
 import org.koitharu.kotatsu.core.util.ext.smoothScrollToTop
 import org.koitharu.kotatsu.databinding.NavigationRailFabBinding
@@ -64,6 +69,9 @@ class MainNavigationDelegate(
 		navBar.setOnItemSelectedListener(this)
 		navBar.setOnItemReselectedListener(this)
 		navRailHeader?.run {
+			root.updateLayoutParams<FrameLayout.LayoutParams> {
+				gravity = Gravity.TOP or Gravity.CENTER
+			}
 			val horizontalPadding = (navBar as NavigationRailView).itemActiveIndicatorMarginHorizontal
 			root.setPadding(horizontalPadding, 0, horizontalPadding, 0)
 			buttonExpand.setOnClickListener(this@MainNavigationDelegate)
@@ -211,10 +219,13 @@ class MainNavigationDelegate(
 			return false
 		}
 		val fragment = instantiateFragment(fragmentClass)
+		val args = buildBundle(1) {
+			putBoolean(AppRouter.KEY_IS_BOTTOMTAB, true)
+		}
 		fragment.enterTransition = MaterialFadeThrough()
 		fragmentManager.beginTransaction()
 			.setReorderingAllowed(true)
-			.replace(R.id.container, fragmentClass, null, TAG_PRIMARY)
+			.replace(R.id.container, fragmentClass, args, TAG_PRIMARY)
 			.runOnCommit { onFragmentChanged(fragment, fromUser = true) }
 			.commit()
 		return true
@@ -290,6 +301,9 @@ class MainNavigationDelegate(
 		if (value) {
 			navBar.expand()
 			navRailHeader?.run {
+				root.updateLayoutParams<FrameLayout.LayoutParams> {
+					gravity = Gravity.TOP or Gravity.START
+				}
 				railFab.extend()
 				buttonExpand.setImageResource(R.drawable.ic_drawer_menu_open)
 				buttonExpand.setContentDescriptionAndTooltip(R.string.collapse)
@@ -299,6 +313,9 @@ class MainNavigationDelegate(
 		} else {
 			navBar.collapse()
 			navRailHeader?.run {
+				root.updateLayoutParams<FrameLayout.LayoutParams> {
+					gravity = Gravity.TOP or Gravity.CENTER
+				}
 				railFab.shrink()
 				buttonExpand.setImageResource(R.drawable.ic_drawer_menu)
 				buttonExpand.setContentDescriptionAndTooltip(R.string.expand)
