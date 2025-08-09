@@ -56,6 +56,7 @@ import org.koitharu.kotatsu.local.domain.DeleteLocalMangaUseCase
 import org.koitharu.kotatsu.local.domain.model.LocalManga
 import org.koitharu.kotatsu.parsers.model.ContentRating
 import org.koitharu.kotatsu.parsers.model.Manga
+import org.koitharu.kotatsu.parsers.model.MangaChapter
 import org.koitharu.kotatsu.parsers.model.MangaPage
 import org.koitharu.kotatsu.parsers.util.ifNullOrEmpty
 import org.koitharu.kotatsu.parsers.util.runCatchingCancellable
@@ -256,6 +257,11 @@ class ReaderViewModel @Inject constructor(
 	fun getCurrentChapterPages(): List<MangaPage>? {
 		val chapterId = readingState.value?.chapterId ?: return null
 		return chaptersLoader.getPages(chapterId)
+	}
+
+	fun getCurrentChapter(): MangaChapter? {
+		val chapterId = readingState.value?.chapterId ?: return null
+		return chaptersLoader.peekChapter(chapterId)
 	}
 
 	fun saveCurrentPage(

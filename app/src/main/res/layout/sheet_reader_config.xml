@@ -168,6 +168,13 @@
 				android:layout_height="wrap_content"
 				android:text="@string/color_correction"
 				app:drawableStartCompat="@drawable/ic_appearance" />
+				
+			<org.koitharu.kotatsu.core.ui.widgets.ListItemTextView
+				android:id="@+id/button_open_in_browser"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="@string/open_in_browser"
+				app:drawableStartCompat="@drawable/ic_public" />
 
 			<org.koitharu.kotatsu.core.ui.widgets.ListItemTextView
 				android:id="@+id/button_settings"
