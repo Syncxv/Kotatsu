@@ -111,7 +111,7 @@ class HistoryRepository @Inject constructor(
 	}
 
 	suspend fun addOrUpdate(manga: Manga, chapterId: Long, page: Int, scroll: Int, percent: Float, force: Boolean) {
-		if (!force && shouldSkip(manga, chapterId)) {
+		if (!force && (shouldSkip(manga) || shouldSkipOldChapter(manga, chapterId))) {
 			return
 		}
 		assert(manga.chapters != null)
@@ -199,15 +199,9 @@ class HistoryRepository @Inject constructor(
 		return db.getHistoryDao().findPopularSources(limit).toMangaSources()
 	}
 
-	suspend fun shouldSkip(manga: Manga, newChapterId: Long? = null): Boolean {
-		if (settings.isIncognitoModeEnabled(manga.isNsfw())) {
-			return true
-		}
+	fun shouldSkip(manga: Manga): Boolean = settings.isIncognitoModeEnabled(manga.isNsfw())
 
-		if (newChapterId == null) {
-			return false
-		}
-
+	suspend fun shouldSkipOldChapter(manga: Manga, newChapterId: Long): Boolean {
 		val currentHistory = db.getHistoryDao().find(manga.id) ?: return false
 		val chapters = manga.chapters
 		if (chapters.isNullOrEmpty()) {
@@ -218,17 +212,17 @@ class HistoryRepository @Inject constructor(
 		val newChapter = chapters.findById(newChapterId)
 
 		if (currentChapter != null && newChapter != null) {
-			if (newChapter.number <= currentChapter.number) {
+			if (newChapter.number < currentChapter.number) {
 				return true
 			}
 		}
 
-		return false
+		return false;
 	}
 
 	fun observeShouldSkip(manga: Manga): Flow<Boolean> {
 		return settings.observe(AppSettings.KEY_INCOGNITO_MODE, AppSettings.KEY_INCOGNITO_NSFW)
-			.map { shouldSkip(manga, null) }
+			.map { shouldSkip(manga) }
 			.distinctUntilChanged()
 	}
 
