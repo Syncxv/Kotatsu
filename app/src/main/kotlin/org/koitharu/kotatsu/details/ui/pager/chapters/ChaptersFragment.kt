@@ -123,13 +123,12 @@ class ChaptersFragment :
 
 		val manga = viewModel.getMangaOrNull() ?: return
 
-		val detailsViewModel = viewModel as? DetailsViewModel
-		val currentHistory = detailsViewModel?.history?.value
-		val readerState = if (currentHistory != null && currentHistory.chapterId == item.chapter.id) {
-			ReaderState(currentHistory)
-		} else {
-			ReaderState(item.chapter.id, 0, 0)
-		}
+		val readerState =
+			(viewModel as? DetailsViewModel)
+				?.history?.value
+				?.takeIf { it.chapterId == item.chapter.id }
+				?.let { ReaderState(it) }
+				?: ReaderState(item.chapter.id, 0, 0)
 
 		router.openReader(
 			ReaderIntent.Builder(view.context)
