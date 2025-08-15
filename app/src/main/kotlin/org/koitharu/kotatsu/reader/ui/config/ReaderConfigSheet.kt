@@ -255,27 +255,21 @@ class ReaderConfigSheet :
 
 		if (manga.isLocal) {
 			Toast.makeText(context, "Can't open local source", Toast.LENGTH_SHORT).show()
-
 			dismissAllowingStateLoss()
 			return
 		}
 
-		if (currentChapter.url.toUri().scheme == "file") {
-			val url = getOriginalChapterUrl(manga, currentChapter)
-
-			if (url == null) {
+		val url = if (currentChapter.url.toUri().scheme == "file") {
+			getOriginalChapterUrl(manga, currentChapter) ?: run {
 				Toast.makeText(context, "welp couldn't find original chapter url", Toast.LENGTH_SHORT).show()
 				dismissAllowingStateLoss()
 				return
 			}
-
-			val chapterUrl = transformChapterUrl(manga, url)
-			router.openBrowser(url = chapterUrl, source = manga.source, title = currentChapter.title ?: manga.title)
-			dismissAllowingStateLoss()
-			return
+		} else {
+			currentChapter.url
 		}
 
-		val chapterUrl = transformChapterUrl(manga, currentChapter.url)
+		val chapterUrl = transformChapterUrl(manga, url)
 		router.openBrowser(url = chapterUrl, source = manga.source, title = currentChapter.title ?: manga.title)
 		dismissAllowingStateLoss()
 	}
