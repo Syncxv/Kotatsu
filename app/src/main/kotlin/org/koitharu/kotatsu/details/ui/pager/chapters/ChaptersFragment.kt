@@ -32,6 +32,7 @@ import org.koitharu.kotatsu.core.util.ext.findParentCallback
 import org.koitharu.kotatsu.core.util.ext.observe
 import org.koitharu.kotatsu.core.util.ext.setTextAndVisible
 import org.koitharu.kotatsu.databinding.FragmentChaptersBinding
+import org.koitharu.kotatsu.details.ui.DetailsViewModel
 import org.koitharu.kotatsu.details.ui.adapter.ChaptersAdapter
 import org.koitharu.kotatsu.details.ui.adapter.ChaptersSelectionDecoration
 import org.koitharu.kotatsu.details.ui.model.ChapterListItem
@@ -112,17 +113,30 @@ class ChaptersFragment :
 		if (selectionController?.onItemClick(item.chapter.id) == true) {
 			return
 		}
-		val listener = findParentCallback(ReaderNavigationCallback::class.java)
-		if (listener != null && listener.onChapterSelected(item.chapter)) {
+
+		if (findParentCallback(ReaderNavigationCallback::class.java)
+				?.onChapterSelected(item.chapter) == true
+		) {
 			dismissParentDialog()
-		} else {
-			router.openReader(
-				ReaderIntent.Builder(view.context)
-					.manga(viewModel.getMangaOrNull() ?: return)
-					.state(ReaderState(item.chapter.id, 0, 0))
-					.build(),
-			)
+			return
 		}
+
+		val manga = viewModel.getMangaOrNull() ?: return
+
+		val detailsViewModel = viewModel as? DetailsViewModel
+		val currentHistory = detailsViewModel?.history?.value
+		val readerState = if (currentHistory != null && currentHistory.chapterId == item.chapter.id) {
+			ReaderState(currentHistory)
+		} else {
+			ReaderState(item.chapter.id, 0, 0)
+		}
+
+		router.openReader(
+			ReaderIntent.Builder(view.context)
+				.manga(manga)
+				.state(readerState)
+				.build(),
+		)
 	}
 
 	override fun onItemLongClick(item: ChapterListItem, view: View): Boolean {
