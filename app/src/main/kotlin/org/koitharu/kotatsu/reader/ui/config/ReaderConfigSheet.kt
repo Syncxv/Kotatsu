@@ -36,6 +36,7 @@ import org.koitharu.kotatsu.reader.ui.ReaderViewModel
 import org.koitharu.kotatsu.reader.ui.ScreenOrientationHelper
 import javax.inject.Inject
 import androidx.core.net.toUri
+import org.koitharu.kotatsu.core.parser.MangaDataRepository
 import org.koitharu.kotatsu.core.parser.MangaParser
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaChapter
@@ -56,6 +57,9 @@ class ReaderConfigSheet :
 
 	@Inject
 	lateinit var mangaRepositoryFactory: MangaRepository.Factory
+
+	@Inject
+	lateinit var dataRepository: MangaDataRepository
 
 	@Inject
 	lateinit var pageLoader: PageLoader
@@ -167,8 +171,9 @@ class ReaderConfigSheet :
 			}
 
 			R.id.button_open_in_browser -> {
-				handleOpenInBrowser()
-				dismissAllowingStateLoss()
+				viewLifecycleScope.launch {
+					handleOpenInBrowser()
+				}
 			}
 
 			R.id.button_image_server -> viewLifecycleScope.launch {
@@ -240,29 +245,62 @@ class ReaderConfigSheet :
 	*	will not work for most sources man damn.
 	*	i only use comick and batoto for now. will improve when i use more
 	*/
-	private fun handleOpenInBrowser() {
+	private suspend fun handleOpenInBrowser() {
 		val manga = viewModel.getMangaOrNull() ?: return
-		val currentChapter = viewModel.getCurrentChapter();
+		val currentChapter = viewModel.getCurrentChapter() ?: run {
+			Toast.makeText(context, "Current chapter not available", Toast.LENGTH_SHORT).show()
+			dismissAllowingStateLoss()
+			return
+		}
 
 		if (manga.isLocal) {
-			return Toast.makeText(context, "Can't open local source", Toast.LENGTH_SHORT).show()
+			Toast.makeText(context, "Can't open local source", Toast.LENGTH_SHORT).show()
+
+			dismissAllowingStateLoss()
+			return
 		}
 
-		if (currentChapter == null) {
-			return Toast.makeText(context, "welp currentChapter is null", Toast.LENGTH_SHORT).show()
+		if (currentChapter.url.toUri().scheme == "file") {
+			val url = getOriginalChapterUrl(manga, currentChapter)
+
+			if (url == null) {
+				Toast.makeText(context, "welp couldn't find original chapter url", Toast.LENGTH_SHORT).show()
+				dismissAllowingStateLoss()
+				return
+			}
+
+			val chapterUrl = transformChapterUrl(manga, url)
+			router.openBrowser(url = chapterUrl, source = manga.source, title = currentChapter.title ?: manga.title)
+			dismissAllowingStateLoss()
+			return
 		}
 
-		val chapterUrl = if (currentChapter.url.startsWith("http")) {
-			currentChapter.url
+		val chapterUrl = transformChapterUrl(manga, currentChapter.url)
+		router.openBrowser(url = chapterUrl, source = manga.source, title = currentChapter.title ?: manga.title)
+		dismissAllowingStateLoss()
+	}
+
+	// TODO: IMPROVE
+	private fun transformChapterUrl(manga: Manga, url: String): String {
+		val chapterUrl = if (url.startsWith("http")) {
+			url
 		} else if (manga.source.name == "BATOTO") {
 			val domain = manga.publicUrl.toUri().host.toString()
-			currentChapter.url.toAbsoluteUrl(domain)
+			url.toAbsoluteUrl(domain)
 		} else {
 			val baseUrl = manga.publicUrl.trimEnd('/')
-			val chapterPath = currentChapter.url.trimStart('/')
+			val chapterPath = url.trimStart('/')
 			"$baseUrl/$chapterPath"
 		}
-		router.openBrowser(url = chapterUrl, source = manga.source, title = currentChapter.title ?: manga.title)
+
+		return chapterUrl;
+	}
+
+	private suspend fun getOriginalChapterUrl(manga: Manga, currentChapter: MangaChapter): String? {
+		val remoteManga = dataRepository.findMangaById(manga.id, withChapters = true)
+		val remoteChapters = remoteManga?.chapters ?: return null
+		val originalChapter = remoteChapters.find { it.id == currentChapter.id } ?: return null
+		return originalChapter.url;
 	}
 
 	private suspend fun bindImageServerTitle() {
