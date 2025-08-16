@@ -1,5 +1,6 @@
 package org.koitharu.kotatsu.history.data
 
+import android.util.Log
 import androidx.room.withTransaction
 import dagger.Reusable
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,7 @@ import org.koitharu.kotatsu.core.model.isLocal
 import org.koitharu.kotatsu.core.model.isNsfw
 import org.koitharu.kotatsu.core.model.toMangaSources
 import org.koitharu.kotatsu.core.parser.MangaDataRepository
+import org.koitharu.kotatsu.core.parser.MangaRepository
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.prefs.ProgressIndicatorMode
 import org.koitharu.kotatsu.core.ui.util.ReversibleHandle
@@ -44,6 +46,7 @@ class HistoryRepository @Inject constructor(
 	private val mangaRepository: MangaDataRepository,
 	private val localObserver: HistoryLocalObserver,
 	private val newChaptersUseCaseProvider: Provider<CheckNewChaptersUseCase>,
+	private val mangaRepositoryFactory: MangaRepository.Factory,
 ) {
 
 	suspend fun getList(offset: Int, limit: Int): List<Manga> {
@@ -203,7 +206,15 @@ class HistoryRepository @Inject constructor(
 
 	suspend fun shouldSkipOldChapter(manga: Manga, newChapterId: Long): Boolean {
 		val currentHistory = db.getHistoryDao().find(manga.id) ?: return false
-		val chapters = manga.chapters
+
+		val fullManga = try {
+			mangaRepositoryFactory.create(manga.source).getDetails(manga)
+		} catch (e: Exception) {
+			Log.e("HistoryRepository", "Failed to get full manga details for ${manga.id}", e)
+			manga
+		}
+
+		val chapters = fullManga.chapters?.ifEmpty { manga.chapters }
 		if (chapters.isNullOrEmpty()) {
 			return false
 		}
