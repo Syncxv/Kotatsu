@@ -37,7 +37,6 @@ import org.koitharu.kotatsu.reader.ui.ScreenOrientationHelper
 import javax.inject.Inject
 import androidx.core.net.toUri
 import org.koitharu.kotatsu.core.parser.MangaDataRepository
-import org.koitharu.kotatsu.core.parser.MangaParser
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaChapter
 import org.koitharu.kotatsu.parsers.model.MangaParserSource
@@ -291,10 +290,13 @@ class ReaderConfigSheet :
 	}
 
 	private suspend fun getOriginalChapterUrl(manga: Manga, currentChapter: MangaChapter): String? {
-		val remoteManga = dataRepository.findMangaById(manga.id, withChapters = true)
-		val remoteChapters = remoteManga?.chapters ?: return null
-		val originalChapter = remoteChapters.find { it.id == currentChapter.id } ?: return null
-		return originalChapter.url;
+		return try {
+			val repo = mangaRepositoryFactory.create(manga.source)
+			val remoteManga = repo.getDetails(manga)
+			remoteManga.chapters?.find { it.id == currentChapter.id }?.url
+		} catch (e: Exception) {
+			null
+		}
 	}
 
 	private suspend fun bindImageServerTitle() {
