@@ -3,7 +3,6 @@ package org.koitharu.kotatsu.reader.ui
 import android.app.assist.AssistContent
 import android.content.DialogInterface
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
@@ -215,9 +214,7 @@ class ReaderActivity :
 
 	override fun onProvideAssistContent(outContent: AssistContent) {
 		super.onProvideAssistContent(outContent)
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			viewModel.getMangaOrNull()?.publicUrl?.toUriOrNull()?.let { outContent.webUri = it }
-		}
+		viewModel.getMangaOrNull()?.publicUrl?.toUriOrNull()?.let { outContent.webUri = it }
 	}
 
 	override fun isNsfwContent(): Flow<Boolean> = viewModel.isMangaNsfw
@@ -374,6 +371,7 @@ class ReaderActivity :
 			viewBinding.infoBar.isTimeVisible = isFullscreen
 			updateScrollTimerButton()
 			systemUiController.setSystemUiVisible(isUiVisible || !isFullscreen)
+			viewBinding.root.requestApplyInsets()
 		}
 	}
 
@@ -395,8 +393,14 @@ class ReaderActivity :
 		viewBinding.infoBar.updatePadding(
 			top = systemBars.top,
 		)
+		val innerInsets = Insets.of(
+			systemBars.left,
+			if (viewBinding.appbarTop.isVisible) viewBinding.appbarTop.height else systemBars.top,
+			systemBars.right,
+			viewBinding.toolbarDocked?.takeIf { it.isVisible }?.height ?: systemBars.bottom,
+		)
 		return WindowInsetsCompat.Builder(insets)
-			.setInsets(WindowInsetsCompat.Type.systemBars(), Insets.NONE)
+			.setInsets(WindowInsetsCompat.Type.systemBars(), innerInsets)
 			.build()
 	}
 

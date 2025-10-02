@@ -99,6 +99,8 @@ class ReaderConfigSheet :
 		binding.buttonVertical.isChecked = mode == ReaderMode.VERTICAL
 		binding.switchDoubleReader.isChecked = settings.isReaderDoubleOnLandscape
 		binding.switchDoubleReader.isEnabled = mode == ReaderMode.STANDARD || mode == ReaderMode.REVERSED
+		binding.switchPullGesture.isChecked = settings.isWebtoonPullGestureEnabled
+		binding.switchPullGesture.isEnabled = mode == ReaderMode.WEBTOON
 
 		binding.checkableGroup.addOnButtonCheckedListener(this)
 		binding.buttonSavePage.setOnClickListener(this)
@@ -110,6 +112,7 @@ class ReaderConfigSheet :
 		binding.buttonBookmark.setOnClickListener(this)
 		binding.buttonOpenInBrowser.setOnClickListener(this)
 		binding.switchDoubleReader.setOnCheckedChangeListener(this)
+		binding.switchPullGesture.setOnCheckedChangeListener(this)
 
 		viewModel.isBookmarkAdded.observe(viewLifecycleOwner) {
 			binding.buttonBookmark.setText(if (it) R.string.bookmark_remove else R.string.bookmark_add)
@@ -195,6 +198,10 @@ class ReaderConfigSheet :
 				settings.isReaderDoubleOnLandscape = isChecked
 				findParentCallback(Callback::class.java)?.onDoubleModeChanged(isChecked)
 			}
+
+			R.id.switch_pull_gesture -> {
+				settings.isWebtoonPullGestureEnabled = isChecked
+			}
 		}
 	}
 
@@ -214,6 +221,7 @@ class ReaderConfigSheet :
 			else -> return
 		}
 		viewBinding?.switchDoubleReader?.isEnabled = newMode == ReaderMode.STANDARD || newMode == ReaderMode.REVERSED
+		viewBinding?.switchPullGesture?.isEnabled = newMode == ReaderMode.WEBTOON
 		if (newMode == mode) {
 			return
 		}

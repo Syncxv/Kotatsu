@@ -2,8 +2,13 @@ package org.koitharu.kotatsu.reader.ui.pager.webtoon
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.MarginLayoutParams
 import android.view.animation.DecelerateInterpolator
+import android.widget.TextView
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,7 +32,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>(),
-	WebtoonRecyclerView.OnWebtoonScrollListener {
+	WebtoonRecyclerView.OnWebtoonScrollListener,
+	WebtoonRecyclerView.OnPullGestureListener {
 
 	@Inject
 	lateinit var networkState: NetworkState
@@ -38,6 +44,8 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 	private val scrollInterpolator = DecelerateInterpolator()
 
 	private var recyclerLifecycleDispatcher: RecyclerViewLifecycleDispatcher? = null
+	private var canGoPrev = true
+	private var canGoNext = true
 
 	override fun onCreateViewBinding(
 		inflater: LayoutInflater,
@@ -53,6 +61,7 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 			recyclerLifecycleDispatcher = RecyclerViewLifecycleDispatcher().also {
 				addOnScrollListener(it)
 			}
+			setOnPullGestureListener(this@WebtoonReaderFragment)
 		}
 		viewModel.isWebtoonZooEnabled.observe(viewLifecycleOwner) {
 			binding.frame.isZoomEnable = it
@@ -70,12 +79,37 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 		viewModel.readerSettingsProducer.observe(viewLifecycleOwner) {
 			it.applyBackground(binding.root)
 		}
+		viewModel.isWebtoonPullGestureEnabled.observe(viewLifecycleOwner) { enabled ->
+			binding.recyclerView.isPullGestureEnabled = enabled
+		}
+		viewModel.uiState.observe(viewLifecycleOwner) { state ->
+			if (state != null) {
+				canGoPrev = state.chapterIndex > 0
+				canGoNext = state.chapterIndex < state.chaptersTotal - 1
+			} else {
+				canGoPrev = true
+				canGoNext = true
+			}
+		}
 	}
 
 	override fun onDestroyView() {
 		recyclerLifecycleDispatcher = null
 		requireViewBinding().recyclerView.adapter = null
 		super.onDestroyView()
+	}
+
+	override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+		val offsetInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+		viewBinding?.apply {
+			feedbackTop.updateLayoutParams<MarginLayoutParams> {
+				topMargin = bottomMargin + offsetInsets.top
+			}
+			feedbackBottom.updateLayoutParams<MarginLayoutParams> {
+				bottomMargin = topMargin + offsetInsets.bottom
+			}
+		}
+		return super.onApplyWindowInsets(v, insets)
 	}
 
 	override fun onCreateAdapter() = WebtoonAdapter(
@@ -168,6 +202,47 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 		return true
 	}
 
+	override fun onPullProgressTop(progress: Float) {
+		val binding = viewBinding ?: return
+		if (canGoPrev) {
+			binding.feedbackTop.setFeedbackText(getString(R.string.pull_to_prev_chapter))
+		} else {
+			binding.feedbackTop.setFeedbackText(getString(R.string.pull_top_no_prev))
+		}
+		binding.feedbackTop.updateFeedback(progress)
+	}
+
+	override fun onPullProgressBottom(progress: Float) {
+		val binding = viewBinding ?: return
+		if (canGoNext) {
+			binding.feedbackBottom.setFeedbackText(getString(R.string.pull_to_next_chapter))
+		} else {
+			binding.feedbackBottom.setFeedbackText(getString(R.string.pull_bottom_no_next))
+		}
+		binding.feedbackBottom.updateFeedback(progress)
+	}
+
+	override fun onPullTriggeredTop() {
+		(viewBinding ?: return).feedbackTop.fadeOut()
+		if (canGoPrev) {
+			viewModel.switchChapterBy(-1)
+		}
+	}
+
+	override fun onPullTriggeredBottom() {
+		(viewBinding ?: return).feedbackBottom.fadeOut()
+		if (canGoNext) {
+			viewModel.switchChapterBy(1)
+		}
+	}
+
+	override fun onPullCancelled() {
+		viewBinding?.apply {
+			feedbackTop.fadeOut()
+			feedbackBottom.fadeOut()
+		}
+	}
+
 	private fun RecyclerView.findCurrentPagePosition(): Int {
 		val centerX = width / 2f
 		val centerY = height - resources.getDimension(R.dimen.webtoon_pages_gap)
@@ -176,5 +251,26 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 		}
 		val view = findChildViewUnder(centerX, centerY) ?: return RecyclerView.NO_POSITION
 		return getChildAdapterPosition(view)
+	}
+
+	private fun TextView.updateFeedback(progress: Float) {
+		val clamped = progress.coerceIn(0f, 1.2f)
+		this.alpha = clamped.coerceAtMost(1f)
+		this.scaleX = 0.9f + 0.1f * clamped.coerceAtMost(1f)
+		this.scaleY = this.scaleX
+	}
+
+	private fun TextView.fadeOut() {
+		animate().alpha(0f).setDuration(150L).start()
+	}
+
+	private fun TextView.setFeedbackText(text: CharSequence) {
+		if (this.alpha <= 0f && text.isNotEmpty()) {
+			this.alpha = 0f
+			this.text = text
+			animate().alpha(1f).setDuration(120L).start()
+		} else {
+			this.text = text
+		}
 	}
 }
