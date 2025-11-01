@@ -30,8 +30,8 @@
     <string name="search_manga">Cari manga</string>
     <string name="manga_downloading_">Mengunduh…</string>
     <string name="processing_">Memproses…</string>
-    <string name="download_complete">Mengambil data (unduh)</string>
-    <string name="downloads">Ambil data (Unduh)</string>
+    <string name="download_complete">Diunduh</string>
+    <string name="downloads">Unduhan</string>
     <string name="by_name">Nama</string>
     <string name="popular">Populer</string>
     <string name="updated">Diperbarui</string>
@@ -65,7 +65,7 @@
     <string name="text_delete_local_manga">Hapus \"%s\" dari perangkat secara permanen?</string>
     <string name="reader_settings">Pengaturan pembaca</string>
     <string name="switch_pages">Ganti halaman</string>
-    <string name="chapters">Bagian jilid</string>
+    <string name="chapters">Bab</string>
     <string name="list">Daftar</string>
     <string name="detailed_list">Daftar rinci</string>
     <string name="webtoon">Webtoon</string>
@@ -80,7 +80,7 @@
     <string name="notifications">Notifikasi</string>
     <string name="enabled_d_of_d" tools:ignore="PluralsCandidate">%1$d dari %2$d diaktifkan</string>
     <string name="new_chapters">Sub-bab baru</string>
-    <string name="download">Ambil data (Unduh)</string>
+    <string name="download">Unduh</string>
     <string name="notifications_settings">Pengaturan notifikasi</string>
     <string name="notification_sound">Suara notifikasi</string>
     <string name="text_empty_holder_primary">Sepi juga di sini…</string>
@@ -865,4 +865,18 @@
     <string name="pull_bottom_no_next">Tidak ada bab berikutnya</string>
     <string name="enable_pull_gesture_title">Aktifkan gerakan tarik</string>
     <string name="enable_pull_gesture_summary">Gunakan gerakan tarik untuk pindah bab di webtoon</string>
+    <string name="two_page_scroll_sensitivity">Sensitivitas Gulir Dua Halaman</string>
+    <string name="saved_filters">Filter tersimpan</string>
+    <string name="enter_name">Masukkan nama</string>
+    <string name="reader_chapter_toast">Tampilkan popup perubahan bab</string>
+    <string name="reader_chapter_toast_summary">Tampilkan pesan pop-up dengan judul bab saat diubah</string>
+    <string name="rename">Ganti nama</string>
+    <string name="save_filter">Simpan filter</string>
+    <string name="overwrite">Timpa</string>
+    <string name="filter_overwrite_confirm">Filter bernama \"%s\" sudah ada. Ingin menimpanya?</string>
+    <string name="storage_and_network">Penyimpanan dan jaringan</string>
+    <string name="create_or_restore_backup">Buat atau pulihkan cadangan</string>
+    <string name="data_removal">Penghapusan data</string>
+    <string name="source_broken_warning">Sumber manga ini telah ditandai rusak. Beberapa fitur mungkin tidak berfungsi</string>
+    <string name="privacy">Pribadi</string>
 </resources>

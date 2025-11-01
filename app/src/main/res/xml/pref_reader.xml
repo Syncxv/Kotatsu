@@ -87,6 +87,12 @@
 		android:title="@string/pages_animation"
 		app:useSimpleSummaryProvider="true" />
 
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="webtoon_pull_gesture"
+        android:summary="@string/enable_pull_gesture_summary"
+        android:title="@string/enable_pull_gesture_title" />
+
 	<SwitchPreferenceCompat
 		android:defaultValue="false"
 		android:key="enhanced_colors"
@@ -143,6 +149,12 @@
 		android:dependency="reader_bar"
 		android:key="reader_bar_transparent"
 		android:title="@string/reader_info_bar_transparent" />
+
+	<SwitchPreferenceCompat
+		android:defaultValue="true"
+		android:key="reader_chapter_toast"
+		android:summary="@string/reader_chapter_toast_summary"
+		android:title="@string/reader_chapter_toast" />
 
 	<ListPreference
 		android:entries="@array/reader_backgrounds"

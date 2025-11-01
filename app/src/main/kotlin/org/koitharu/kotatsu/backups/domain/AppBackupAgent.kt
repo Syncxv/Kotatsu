@@ -12,6 +12,8 @@ import kotlinx.coroutines.runBlocking
 import org.koitharu.kotatsu.backups.data.BackupRepository
 import org.koitharu.kotatsu.core.db.MangaDatabase
 import org.koitharu.kotatsu.core.prefs.AppSettings
+import org.koitharu.kotatsu.explore.data.MangaSourcesRepository
+import org.koitharu.kotatsu.filter.data.SavedFiltersRepository
 import org.koitharu.kotatsu.reader.data.TapGridSettings
 import java.io.File
 import java.io.FileDescriptor
@@ -36,15 +38,22 @@ class AppBackupAgent : BackupAgent() {
 
 	override fun onFullBackup(data: FullBackupDataOutput) {
 		super.onFullBackup(data)
-		val file =
-			createBackupFile(
-				this,
-				BackupRepository(
-					MangaDatabase(context = applicationContext),
-					AppSettings(applicationContext),
-					TapGridSettings(applicationContext),
+		val file = createBackupFile(
+			this,
+			BackupRepository(
+				database = MangaDatabase(context = applicationContext),
+				settings = AppSettings(applicationContext),
+				tapGridSettings = TapGridSettings(applicationContext),
+				mangaSourcesRepository = MangaSourcesRepository(
+					context = applicationContext,
+					db = MangaDatabase(context = applicationContext),
+					settings = AppSettings(applicationContext),
 				),
-			)
+				savedFiltersRepository = SavedFiltersRepository(
+					context = applicationContext,
+				),
+			),
+		)
 		try {
 			fullBackupFile(file, data)
 		} finally {
@@ -68,6 +77,14 @@ class AppBackupAgent : BackupAgent() {
 					database = MangaDatabase(applicationContext),
 					settings = AppSettings(applicationContext),
 					tapGridSettings = TapGridSettings(applicationContext),
+					mangaSourcesRepository = MangaSourcesRepository(
+						context = applicationContext,
+						db = MangaDatabase(context = applicationContext),
+						settings = AppSettings(applicationContext),
+					),
+					savedFiltersRepository = SavedFiltersRepository(
+						context = applicationContext,
+					),
 				),
 			)
 			destination.delete()
@@ -90,8 +107,12 @@ class AppBackupAgent : BackupAgent() {
 	@VisibleForTesting
 	fun restoreBackupFile(fd: FileDescriptor, size: Long, repository: BackupRepository) {
 		ZipInputStream(ByteStreams.limit(FileInputStream(fd), size)).use { input ->
+			val sections = EnumSet.allOf(BackupSection::class.java)
+			// managed externally
+			sections.remove(BackupSection.SETTINGS)
+			sections.remove(BackupSection.SETTINGS_READER_GRID)
 			runBlocking {
-				repository.restoreBackup(input, EnumSet.allOf(BackupSection::class.java), null)
+				repository.restoreBackup(input, sections, null)
 			}
 		}
 	}
